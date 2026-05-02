@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecte Transcendant des Intentions</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(139,92,246,0.6);
+    --accent: #8b5cf6;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --text: #f0f0f8;
+    --muted: #6b7280;
+    --tag-bg: rgba(139,92,246,0.12);
+    --success: #10b981;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  /* HEADER */
+  header { padding: 1.1rem 2.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+  .logo-block h1 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  .logo-block h1 span { color: var(--accent); }
+  .logo-block p { color: var(--muted); font-size: 10px; margin-top: 4px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* PROVIDER SELECTOR */
+  .provider-bar { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+  .provider-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 4px; cursor: pointer;
+    border: 1px solid transparent;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+    color: var(--muted); background: transparent; transition: all 0.15s; white-space: nowrap;
+  }
+  .provider-btn:hover { background: var(--surface2); color: var(--text); }
+  .provider-btn.active.claude  { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+  .provider-btn.active.mistral { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); color: #fbbf24; }
+  .provider-btn.active.openai  { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25); color: #34d399; }
+
+  .prov-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .prov-dot.claude  { background: #8b5cf6; }
+  .prov-dot.mistral { background: #f59e0b; }
+  .prov-dot.openai  { background: #10b981; }
+
+  select.model-select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 7px 10px;
+    border-radius: 4px; outline: none; cursor: pointer; transition: border-color 0.2s;
+  }
+  select.model-select:focus { border-color: var(--border-active); }
+
+  /* LAYOUT */
+  .app { display: grid; grid-template-columns: 252px 1fr; min-height: calc(100vh - 70px); }
+
+  /* SIDEBAR */
+  aside { border-right: 1px solid var(--border); padding: 1.2rem; display: flex; flex-direction: column; gap: 1.4rem; overflow-y: auto; }
+  .section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+  /* KEY PANEL — v2 */
+  .key-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  .kp-row { display: flex; flex-direction: column; gap: 5px; }
+
+  .kp-label {
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .kp-label-left { display: flex; align-items: center; gap: 6px; }
+
+  .kp-status {
+    font-size: 9px; padding: 1px 6px; border-radius: 2px; letter-spacing: 0.06em;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted);
+    transition: all 0.2s;
+  }
+  .kp-status.saved   { background: rgba(16,185,129,0.1);  border-color: rgba(16,185,129,0.3);  color: #34d399; }
+  .kp-status.locked  { background: rgba(139,92,246,0.1);  border-color: rgba(139,92,246,0.25); color: #a78bfa; }
+  .kp-status.empty   { background: rgba(255,255,255,0.03); border-color: var(--border); color: var(--muted); }
+
+  .kp-input-row { display: flex; gap: 4px; align-items: center; }
+
+  .kp-input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    padding: 7px 10px; border-radius: 3px; outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    min-width: 0;
+  }
+  .kp-input:focus  { border-color: var(--border-active); }
+  .kp-input::placeholder { color: var(--muted); }
+  .kp-input:disabled { opacity: 0.5; cursor: not-allowed; background: rgba(255,255,255,0.02); }
+  .kp-input.is-saved  { border-color: rgba(16,185,129,0.35); }
+  .kp-input.is-locked { border-color: rgba(139,92,246,0.35); }
+
+  .kp-btn {
+    width: 28px; height: 28px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-size: 12px; line-height: 1; transition: all 0.15s;
+    color: var(--muted);
+  }
+  .kp-btn:hover { background: var(--surface2); color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .kp-btn.btn-save:hover  { border-color: rgba(16,185,129,0.4);  color: #34d399; background: rgba(16,185,129,0.08); }
+  .kp-btn.btn-lock        { }
+  .kp-btn.btn-lock.active { border-color: rgba(139,92,246,0.4); color: #a78bfa; background: rgba(139,92,246,0.1); }
+  .kp-btn.btn-eye         { }
+
+  .nav-item { padding: 7px 10px; border-radius: 4px; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--tag-bg); color: #c4b5fd; border-color: rgba(139,92,246,0.25); }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-purple { background: var(--accent); }
+  .dot-cyan   { background: var(--accent2); }
+  .dot-amber  { background: var(--accent3); }
+  .dot-green  { background: var(--success); }
+  .dot-red    { background: var(--danger); }
+
+  .complexity-bar { margin-top: 3px; }
+  .complexity-bar label { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .bar-track { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+  /* MAIN */
+  main { display: flex; flex-direction: column; overflow: hidden; }
+
+  .input-zone { padding: 1.4rem 2rem 1.2rem; border-bottom: 1px solid var(--border); }
+  .input-zone > label { display: block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+
+  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 12px 14px; border-radius: 4px; resize: none; outline: none; transition: border-color 0.2s; line-height: 1.6; }
+  textarea:focus { border-color: var(--border-active); }
+  textarea::placeholder { color: var(--muted); }
+
+  .input-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+  .btn-primary { background: var(--accent); color: white; border: none; padding: 8px 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; cursor: pointer; border-radius: 3px; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 7px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; cursor: pointer; border-radius: 3px; transition: color 0.15s, border-color 0.15s; }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+  .char-count { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+  .output-area { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 0; }
+
+  /* LOADER */
+  .loader { display: none; align-items: center; gap: 12px; padding: 1.5rem 0; color: var(--muted); font-size: 12px; }
+  .loader.active { display: flex; }
+  .pulse-dots { display: flex; gap: 4px; }
+  .pulse-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+  .pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)} }
+
+  /* RESULT */
+  .result-block { display: none; flex-direction: column; gap: 14px; animation: fadeIn 0.3s ease; }
+  .result-block.active { display: flex; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .section-card { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .section-card-header { padding: 9px 14px; background: var(--surface); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .section-icon { font-size: 13px; width: 20px; text-align: center; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .section-title.purple { color: #a78bfa; }
+  .section-title.cyan   { color: #22d3ee; }
+  .section-title.amber  { color: #fbbf24; }
+  .section-title.green  { color: #34d399; }
+  .section-title.red    { color: #f87171; }
+
+  .section-card-body { padding: 14px; background: var(--surface2); }
+  .section-card-body p { color: #d1d5db; font-size: 12px; line-height: 1.7; margin-bottom: 6px; }
+  .section-card-body ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .section-card-body li { color: #d1d5db; font-size: 11px; padding-left: 13px; position: relative; line-height: 1.6; }
+  .section-card-body li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); font-size: 10px; top: 3px; }
+
+  .prompt-block { background: #0d0d1a; border: 1px solid rgba(139,92,246,0.2); border-radius: 4px; padding: 10px 12px; margin-top: 8px; font-size: 11px; color: #c4b5fd; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .metric-pill { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
+  .metric-pill .m-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
+
+  .week-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .week-row:last-child { border-bottom: none; }
+  .week-label { font-size: 10px; color: var(--accent); min-width: 55px; padding-top: 2px; font-weight: 500; }
+  .week-content { font-size: 11px; color: #d1d5db; line-height: 1.6; flex: 1; }
+
+  .alert-row { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-icon { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .alert-icon.warn { background: rgba(245,158,11,0.3); border: 1px solid var(--accent3); }
+  .alert-icon.risk { background: rgba(239,68,68,0.2);  border: 1px solid var(--danger); }
+  .alert-text { font-size: 11px; color: #d1d5db; line-height: 1.6; }
+
+  /* EMPTY STATE */
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--muted); gap: 12px; padding: 3rem; }
+  .empty-state .big-icon { font-size: 2rem; opacity: 0.3; }
+  .empty-state h2 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: rgba(240,240,248,0.2); }
+  .empty-state p { font-size: 11px; color: var(--muted); max-width: 340px; line-height: 1.7; }
+
+  .example-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+  .chip { background: var(--surface); border: 1px solid var(--border); color: #9ca3af; font-size: 10px; padding: 4px 10px; border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+  .chip:hover { background: var(--surface2); color: var(--text); border-color: rgba(139,92,246,0.3); }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  .status-bar { padding: 5px 2rem; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  .api-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 4px; padding: 10px 14px; font-size: 12px; color: #f87171; margin-top: 8px; line-height: 1.6; }
+
+  .toast { position: fixed; bottom: 22px; right: 22px; background: var(--surface); border: 1px solid rgba(16,185,129,0.3); color: #34d399; font-size: 11px; padding: 8px 16px; border-radius: 4px; opacity: 0; transform: translateY(6px); transition: all 0.2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .kp-save-all {
+    width: 100%; background: rgba(16,185,129,0.08); color: #34d399;
+    border: 1px solid rgba(16,185,129,0.25); padding: 7px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500;
+    cursor: pointer; border-radius: 3px; transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .kp-save-all:hover { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.45); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <h1>ARCHITECTE <span>TRANSCENDANT</span></h1>
+    <p>AI-Native Architecture Engine</p>
+  </div>
+  <div class="header-right">
+    <div class="provider-bar">
+      <button class="provider-btn claude active" onclick="setProvider('claude')">
+        <span class="prov-dot claude"></span>Claude
+      </button>
+      <button class="provider-btn mistral" onclick="setProvider('mistral')">
+        <span class="prov-dot mistral"></span>Mistral
+      </button>
+      <button class="provider-btn openai" onclick="setProvider('openai')">
+        <span class="prov-dot openai"></span>OpenAI
+      </button>
+    </div>
+    <select class="model-select" id="model-select" onchange="updateStatusLabel()"></select>
+  </div>
+</header>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside>
+
+    <!-- API KEYS v2 -->
+    <div>
+      <div class="section-label">Clés API</div>
+      <div class="key-panel">
+
+        <!-- CLAUDE -->
+        <div class="kp-row" id="kp-claude">
+          <div class="kp-label">
+            <div class="kp-label-left">
+              <span class="prov-dot claude"></span>
+              <span style="color:#a78bfa;">CLAUDE</span>
+            </div>
+            <span class="kp-status empty" id="kps-claude">vide</span>
+          </div>
+          <div class="kp-input-row">
+            <input class="kp-input" id="key-claude" type="password"
+              placeholder="sk-ant-api03-..."
+              oninput="kpOnInput('claude')" />
+            <button class="kp-btn btn-eye"   id="eye-claude"  onclick="kpEye('claude')"  title="Voir/masquer">👁</button>
+            <button class="kp-btn btn-lock"  id="lock-claude" onclick="kpLock('claude')" title="Verrouiller">🔒</button>
+            <button class="kp-btn btn-save"  id="save-claude" onclick="kpSave('claude')" title="Enregistrer">💾</button>
+          </div>
+        </div>
+
+        <!-- MISTRAL -->
+        <div class="kp-row" id="kp-mistral">
+          <div class="kp-label">
+            <div class="kp-label-left">
+              <span class="prov-dot mistral"></span>
+              <span style="color:#fbbf24;">MISTRAL</span>
+            </div>
+            <span class="kp-status empty" id="kps-mistral">vide</span>
+          </div>
+          <div class="kp-input-row">
+            <input class="kp-input" id="key-mistral" type="password"
+              placeholder="Clé Mistral AI..."
+              oninput="kpOnInput('mistral')" />
+            <button class="kp-btn btn-eye"   id="eye-mistral"  onclick="kpEye('mistral')"  title="Voir/masquer">👁</button>
+            <button class="kp-btn btn-lock"  id="lock-mistral" onclick="kpLock('mistral')" title="Verrouiller">🔒</button>
+            <button class="kp-btn btn-save"  id="save-mistral" onclick="kpSave('mistral')" title="Enregistrer">💾</button>
+          </div>
+        </div>
+
+        <!-- OPENAI -->
+        <div class="kp-row" id="kp-openai">
+          <div class="kp-label">
+            <div class="kp-label-left">
+              <span class="prov-dot openai"></span>
+              <span style="color:#34d399;">OPENAI</span>
+            </div>
+            <span class="kp-status empty" id="kps-openai">vide</span>
+          </div>
+          <div class="kp-input-row">
+            <input class="kp-input" id="key-openai" type="password"
+              placeholder="sk-proj-..."
+              oninput="kpOnInput('openai')" />
+            <button class="kp-btn btn-eye"   id="eye-openai"  onclick="kpEye('openai')"  title="Voir/masquer">👁</button>
+            <button class="kp-btn btn-lock"  id="lock-openai" onclick="kpLock('openai')" title="Verrouiller">🔒</button>
+            <button class="kp-btn btn-save"  id="save-openai" onclick="kpSave('openai')" title="Enregistrer">💾</button>
+          </div>
+        </div>
+
+        <button class="kp-save-all" onclick="kpSaveAll()">💾 TOUT ENREGISTRER</button>
+        <div style="font-size:9px;color:var(--muted);line-height:1.5;">
+          Local uniquement · jamais transmises
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DOMAINS -->
+    <div>
+      <div class="section-label">Domaines</div>
+      <div class="nav-item active"><span class="dot dot-purple"></span>Architecture Système</div>
+      <div class="nav-item"><span class="dot dot-cyan"></span>Automatisation</div>
+      <div class="nav-item"><span class="dot dot-amber"></span>SaaS / Produit</div>
+      <div class="nav-item"><span class="dot dot-green"></span>Workflow IA</div>
+      <div class="nav-item"><span class="dot dot-red"></span>Intégrations API</div>
+    </div>
+
+    <!-- STACK -->
+    <div>
+      <div class="section-label">Stack recommandé</div>
+      <div style="display:flex;flex-direction:column;gap:5px;" id="stack-display">
+        <div style="font-size:10px;color:var(--muted);">En attente d'analyse...</div>
+      </div>
+    </div>
+
+    <!-- COMPLEXITY -->
+    <div>
+      <div class="section-label">Complexité estimée</div>
+      <div class="complexity-bar">
+        <label><span>Frontend</span><span id="c-front">—</span></label>
+        <div class="bar-track"><div class="bar-fill" id="bar-front" style="width:0%;background:#8b5cf6;"></div></div>
+      </div>
+      <div class="complexity-bar" style="margin-top:8px;">
+        <label><span>Backend</span><span id="c-back">—</span></label>
+        <div class="bar-track"><div class="bar-fill" id="bar-back" style="width:0%;background:#06b6d4;"></div></div>
+      </div>
+      <div class="complexity-bar" style="margin-top:8px;">
+        <label><span>Intégrations</span><span id="c-int">—</span></label>
+        <div class="bar-track"><div class="bar-fill" id="bar-int" style="width:0%;background:#f59e0b;"></div></div>
+      </div>
+    </div>
+
+    <!-- ROI -->
+    <div>
+      <div class="section-label">ROI estimé</div>
+      <div id="roi-block" style="font-size:10px;color:var(--muted);">En attente...</div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="input-zone">
+      <label>// Décrire votre intention business</label>
+      <textarea id="input" rows="4" placeholder="Ex: Je veux un SaaS de gestion de projets avec IA intégrée, tableau kanban, et automatisation des rappels..."></textarea>
+      <div class="input-actions">
+        <button class="btn-primary" id="btn-analyze" onclick="analyze()">▶ ANALYSER</button>
+        <button class="btn-ghost" onclick="clearAll()">RESET</button>
+        <span class="char-count" id="char-count">0 / 1000</span>
+      </div>
+    </div>
+
+    <div class="output-area" id="output-area">
+      <div class="empty-state" id="empty-state">
+        <div class="big-icon">⬡</div>
+        <h2>Aucune intention soumise</h2>
+        <p>Choisissez un provider, renseignez votre clé API, décrivez votre besoin.</p>
+        <div class="example-chips">
+          <span class="chip" onclick="setExample(this)">CRM startup</span>
+          <span class="chip" onclick="setExample(this)">Automatiser congés RH</span>
+          <span class="chip" onclick="setExample(this)">SaaS concurrent Trello + IA</span>
+          <span class="chip" onclick="setExample(this)">Agent IA support client</span>
+          <span class="chip" onclick="setExample(this)">Marketplace freelances</span>
+        </div>
+      </div>
+
+      <div class="loader" id="loader">
+        <div class="pulse-dots"><span></span><span></span><span></span></div>
+        <span id="loader-text">Déconstruction architecturale en cours...</span>
+      </div>
+
+      <div class="result-block" id="result-block"></div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span id="status-label">CLAUDE SONNET 4 · PRÊT</span>
+      <span style="margin-left:auto;" id="token-count"></span>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast">✓ Clés sauvegardées</div>
+
+<script>
+// ── PROVIDERS CONFIG ──
+const PROVIDERS = {
+  claude: {
+    name: 'Claude',
+    models: [
+      { id: 'claude-sonnet-4-20250514',  label: 'Claude Sonnet 4 (recommandé)' },
+      { id: 'claude-opus-4-5',           label: 'Claude Opus 4.5' },
+      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (rapide)' },
+    ]
+  },
+  mistral: {
+    name: 'Mistral',
+    models: [
+      { id: 'mistral-large-latest',  label: 'Mistral Large (recommandé)' },
+      { id: 'mistral-medium-latest', label: 'Mistral Medium' },
+      { id: 'mistral-small-latest',  label: 'Mistral Small (rapide)' },
+      { id: 'open-mixtral-8x22b',    label: 'Mixtral 8x22B' },
+    ]
+  },
+  openai: {
+    name: 'OpenAI',
+    models: [
+      { id: 'gpt-4o',      label: 'GPT-4o (recommandé)' },
+      { id: 'gpt-4o-mini', label: 'GPT-4o Mini (rapide)' },
+      { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+      { id: 'o1-mini',     label: 'o1 Mini' },
+    ]
+  }
+};
+
+let currentProvider = 'claude';
+
+function setProvider(p) {
+  currentProvider = p;
+  document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.provider-btn.${p}`).classList.add('active');
+  updateModelSelect();
+  updateStatusLabel();
+}
+
+function updateModelSelect() {
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = PROVIDERS[currentProvider].models
+    .map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+}
+
+function updateStatusLabel() {
+  const sel = document.getElementById('model-select');
+  const label = sel.options[sel.selectedIndex]?.text.split(' (')[0] || '';
+  document.getElementById('status-label').textContent =
+    `${PROVIDERS[currentProvider].name.toUpperCase()} · ${label.toUpperCase()} · PRÊT`;
+}
+
+// ── KEY PANEL v2 ──
+// État par provider : { saved: bool, locked: bool }
+const KP_STATE = { claude: {saved:false, locked:false}, mistral: {saved:false, locked:false}, openai: {saved:false, locked:false} };
+
+function kpStorage(action, p, val) {
+  // Essaie localStorage, fallback sessionStorage
+  const key = 'atdi_key_' + p;
+  try {
+    if (action === 'set') { localStorage.setItem(key, val); return true; }
+    if (action === 'get') return localStorage.getItem(key) || '';
+    if (action === 'del') { localStorage.removeItem(key); return true; }
+  } catch(e) {}
+  try {
+    if (action === 'set') { sessionStorage.setItem(key, val); return true; }
+    if (action === 'get') return sessionStorage.getItem(key) || '';
+    if (action === 'del') { sessionStorage.removeItem(key); return true; }
+  } catch(e) {}
+  return '';
+}
+
+function kpSetStatus(p, state) {
+  // state: 'empty' | 'filled' | 'saved' | 'locked'
+  const badge = document.getElementById('kps-' + p);
+  const input = document.getElementById('key-' + p);
+  const lockBtn = document.getElementById('lock-' + p);
+  badge.className = 'kp-status ' + state;
+  input.className = 'kp-input' + (state === 'saved' ? ' is-saved' : state === 'locked' ? ' is-locked' : '');
+  const labels = { empty:'vide', filled:'non enregistré', saved:'enregistré ✓', locked:'verrouillé 🔒' };
+  badge.textContent = labels[state] || state;
+  lockBtn.classList.toggle('active', state === 'locked');
+}
+
+function kpOnInput(p) {
+  if (KP_STATE[p].locked) return;
+  const val = document.getElementById('key-' + p).value.trim();
+  KP_STATE[p].saved = false;
+  kpSetStatus(p, val.length > 4 ? 'filled' : 'empty');
+}
+
+function kpEye(p) {
+  if (KP_STATE[p].locked) return;
+  const inp = document.getElementById('key-' + p);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function kpLock(p) {
+  const inp = document.getElementById('key-' + p);
+  const val = inp.value.trim();
+  if (!val) { kpToast('⚠ Entrez une clé avant de verrouiller'); return; }
+  // Toggle lock
+  if (KP_STATE[p].locked) {
+    // Déverrouiller
+    KP_STATE[p].locked = false;
+    inp.disabled = false;
+    kpSetStatus(p, KP_STATE[p].saved ? 'saved' : 'filled');
+    kpToast('🔓 ' + p.toUpperCase() + ' déverrouillé');
+  } else {
+    // Verrouiller
+    KP_STATE[p].locked = true;
+    inp.disabled = true;
+    inp.type = 'password';
+    kpSetStatus(p, 'locked');
+    kpToast('🔒 ' + p.toUpperCase() + ' verrouillé');
+  }
+}
+
+function kpSave(p) {
+  const val = document.getElementById('key-' + p).value.trim();
+  if (!val) { kpToast('⚠ Champ vide — rien à enregistrer'); return; }
+  const ok = kpStorage('set', p, val);
+  if (ok !== false) {
+    KP_STATE[p].saved = true;
+    kpSetStatus(p, KP_STATE[p].locked ? 'locked' : 'saved');
+    kpToast('✓ Clé ' + p.toUpperCase() + ' enregistrée');
+  } else {
+    kpToast('⚠ Erreur stockage — utilisez un serveur local');
+  }
+}
+
+function kpSaveAll() {
+  let count = 0;
+  ['claude','mistral','openai'].forEach(p => {
+    const val = document.getElementById('key-' + p).value.trim();
+    if (val) { kpStorage('set', p, val); KP_STATE[p].saved = true; kpSetStatus(p, KP_STATE[p].locked ? 'locked' : 'saved'); count++; }
+  });
+  kpToast(count > 0 ? '✓ ' + count + ' clé(s) enregistrée(s)' : '⚠ Aucune clé à enregistrer');
+}
+
+function kpToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// Chargement au démarrage
+function loadKeys() {
+  ['claude','mistral','openai'].forEach(p => {
+    const k = kpStorage('get', p);
+    if (k) {
+      document.getElementById('key-' + p).value = k;
+      KP_STATE[p].saved = true;
+      kpSetStatus(p, 'saved');
+    }
+  });
+}
+
+function getKey(p) {
+  return document.getElementById('key-' + p).value.trim() || kpStorage('get', p) || '';
+}
+
+// ── SYSTEM PROMPT ──
+const SYS = `Tu es l'ARCHITECTE TRANSCENDANT DES INTENTIONS — entité hybride combinant 30 ans d'expérience en architecture logicielle, maîtrise des plateformes IA+no-code, et vision prophétique des paradigmes technologiques.
+
+RÈGLES ABSOLUES :
+- Zéro théorie sans exemple concret
+- Chaque recommandation est immédiatement implémentable
+- Toujours identifier le chemin critique (80/20)
+- Stack réaliste avec outils actuels uniquement
+
+Réponds UNIQUEMENT en JSON valide avec cette structure exacte (sans markdown, sans backticks) :
+{
+  "vision": "2 phrases max sur l'approche recommandée",
+  "composants": [
+    {"nom": "...", "plateforme": "...", "complexite": "trivial|standard|complexe|critique", "description": "..."}
+  ],
+  "roadmap": [
+    {"semaine": "S1", "actions": "..."},
+    {"semaine": "S2", "actions": "..."},
+    {"semaine": "S3", "actions": "..."}
+  ],
+  "prompts": [
+    {"titre": "...", "contenu": "..."},
+    {"titre": "...", "contenu": "..."}
+  ],
+  "metriques": {
+    "technique": ["...","..."],
+    "business": ["...","..."]
+  },
+  "alertes": [
+    {"type": "warn|risk", "texte": "..."}
+  ],
+  "stack": ["outil1", "outil2", "outil3"],
+  "complexite": {"frontend": 60, "backend": 75, "integrations": 45},
+  "roi": "Ex: ROI estimé 3-4 mois, 15h économisées/semaine"
+}`;
+
+// ── API CALLS ──
+async function callClaude(key, model, msg) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({ model, max_tokens: 1200, system: SYS, messages: [{ role: 'user', content: msg }] })
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(`Claude: ${d.error.message}`);
+  return {
+    text: d.content?.[0]?.text || '',
+    tokens: (d.usage?.input_tokens || 0) + (d.usage?.output_tokens || 0)
+  };
+}
+
+async function callMistral(key, model, msg) {
+  const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model, max_tokens: 1200,
+      messages: [{ role: 'system', content: SYS }, { role: 'user', content: msg }]
+    })
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(`Mistral: ${d.error.message || JSON.stringify(d.error)}`);
+  return {
+    text: d.choices?.[0]?.message?.content || '',
+    tokens: (d.usage?.prompt_tokens || 0) + (d.usage?.completion_tokens || 0)
+  };
+}
+
+async function callOpenAI(key, model, msg) {
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model, max_tokens: 1200,
+      messages: [{ role: 'system', content: SYS }, { role: 'user', content: msg }]
+    })
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(`OpenAI: ${d.error.message}`);
+  return {
+    text: d.choices?.[0]?.message?.content || '',
+    tokens: (d.usage?.prompt_tokens || 0) + (d.usage?.completion_tokens || 0)
+  };
+}
+
+// ── INPUT ──
+const textarea = document.getElementById('input');
+const charCount = document.getElementById('char-count');
+textarea.addEventListener('input', () => {
+  const len = textarea.value.length;
+  charCount.textContent = len + ' / 1000';
+  if (len > 1000) textarea.value = textarea.value.slice(0, 1000);
+});
+textarea.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'Enter') analyze(); });
+
+const EXAMPLES = {
+  'CRM startup': 'Je veux un CRM simple pour ma startup B2B : gestion des contacts, pipeline deals, suivi activités, et tableau de bord avec KPIs. Utilisateurs : 3 commerciaux.',
+  'Automatiser congés RH': "Automatiser les demandes de congés pour une équipe de 20 personnes : soumission en ligne, workflow d'approbation multi-niveaux, synchronisation calendrier, et notifications automatiques.",
+  'SaaS concurrent Trello + IA': "Créer un SaaS de gestion de projets concurrent à Trello mais avec IA intégrée : génération automatique de tâches depuis un brief, estimation des délais, détection des risques, et priorisation intelligente.",
+  'Agent IA support client': "Créer un agent IA pour le support client : réponses automatiques aux questions fréquentes, escalade intelligente aux humains, base de connaissances auto-apprenante, et analytics des tickets.",
+  'Marketplace freelances': "Construire une marketplace pour freelances tech : profils, matching IA client/freelance, système d'offres, messagerie intégrée, paiement sécurisé, et reviews."
+};
+
+function setExample(el) {
+  textarea.value = EXAMPLES[el.textContent] || el.textContent;
+  charCount.textContent = textarea.value.length + ' / 1000';
+}
+
+function clearAll() {
+  textarea.value = '';
+  charCount.textContent = '0 / 1000';
+  document.getElementById('empty-state').style.display = 'flex';
+  document.getElementById('result-block').classList.remove('active');
+  document.getElementById('loader').classList.remove('active');
+  document.getElementById('stack-display').innerHTML = "<div style='font-size:10px;color:var(--muted);'>En attente d'analyse...</div>";
+  ['front','back','int'].forEach(k => {
+    document.getElementById('bar-' + k).style.width = '0%';
+    document.getElementById('c-' + k).textContent = '—';
+  });
+  document.getElementById('roi-block').textContent = 'En attente...';
+  document.getElementById('token-count').textContent = '';
+  updateStatusLabel();
+}
+
+// ── LOADER ──
+const LOADER_MSGS = [
+  'Déconstruction architecturale en cours...',
+  'Cartographie des composants...',
+  'Sélection du stack optimal...',
+  'Génération de la roadmap...',
+  'Préparation des prompts critiques...'
+];
+let loaderInterval;
+function startLoader() {
+  let i = 0;
+  const el = document.getElementById('loader-text');
+  el.textContent = LOADER_MSGS[0];
+  loaderInterval = setInterval(() => { i = (i+1) % LOADER_MSGS.length; el.textContent = LOADER_MSGS[i]; }, 1800);
+}
+function stopLoader() { clearInterval(loaderInterval); }
+
+// ── ANALYZE ──
+async function analyze() {
+  const input = textarea.value.trim();
+  if (!input) return;
+
+  const key = getKey(currentProvider);
+  if (!key) {
+    showError(`Clé API ${PROVIDERS[currentProvider].name} manquante — renseignez-la dans la sidebar puis cliquez "Sauvegarder les clés".`);
+    return;
+  }
+
+  const model = document.getElementById('model-select').value;
+  const btn = document.getElementById('btn-analyze');
+  btn.disabled = true;
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('result-block').classList.remove('active');
+  document.getElementById('loader').classList.add('active');
+  startLoader();
+  document.getElementById('status-label').textContent =
+    `${PROVIDERS[currentProvider].name.toUpperCase()} · ANALYSE EN COURS...`;
+
+  try {
+    let result;
+    if (currentProvider === 'claude')  result = await callClaude(key, model, input);
+    if (currentProvider === 'mistral') result = await callMistral(key, model, input);
+    if (currentProvider === 'openai')  result = await callOpenAI(key, model, input);
+
+    stopLoader();
+    document.getElementById('loader').classList.remove('active');
+    if (result.tokens) document.getElementById('token-count').textContent = result.tokens.toLocaleString() + ' tokens';
+
+    let parsed;
+    try { parsed = JSON.parse(result.text); }
+    catch {
+      const m = result.text.match(/\{[\s\S]*\}/);
+      if (m) parsed = JSON.parse(m[0]);
+      else throw new Error('Réponse JSON invalide. Réessayez.');
+    }
+    renderResult(parsed);
+
+  } catch (err) {
+    stopLoader();
+    document.getElementById('loader').classList.remove('active');
+    showError(err.message);
+  }
+
+  updateStatusLabel();
+  btn.disabled = false;
+}
+
+function showError(msg) {
+  document.getElementById('empty-state').style.display = 'none';
+  const rb = document.getElementById('result-block');
+  rb.innerHTML = `<div class="api-error">⚠ ${msg}</div>`;
+  rb.classList.add('active');
+}
+
+// ── RENDER ──
+function cxColor(c) {
+  return {trivial:'#34d399',standard:'#22d3ee',complexe:'#fbbf24',critique:'#f87171'}[c]||'#6b7280';
+}
+
+function renderResult(d) {
+  const rb = document.getElementById('result-block');
+
+  if (d.stack) {
+    document.getElementById('stack-display').innerHTML = d.stack.map(s =>
+      `<div style="font-size:10px;color:#c4b5fd;padding:3px 7px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15);border-radius:2px;">${s}</div>`
+    ).join('');
+  }
+  if (d.complexite) {
+    const map = {frontend:'front',backend:'back',integrations:'int'};
+    Object.entries(map).forEach(([k,s]) => {
+      const v = d.complexite[k] || 0;
+      document.getElementById('bar-'+s).style.width = v + '%';
+      document.getElementById('c-'+s).textContent = v + '%';
+    });
+  }
+  if (d.roi) document.getElementById('roi-block').innerHTML =
+    `<span style="color:#34d399;font-size:10px;">${d.roi}</span>`;
+
+  let html = '';
+  html += card('purple','🎯','VISION ARCHITECTURALE', `<p>${d.vision||'—'}</p>`);
+
+  if (d.composants?.length) {
+    const items = d.composants.map(c => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(255,255,255,0.04);border:1px solid ${cxColor(c.complexite)};color:${cxColor(c.complexite)};white-space:nowrap;margin-top:2px;">${c.complexite}</span>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px;">${c.nom} <span style="color:var(--accent2);font-size:10px;">· ${c.plateforme}</span></div>
+          <div style="font-size:10px;color:#9ca3af;">${c.description}</div>
+        </div>
+      </div>`).join('');
+    html += card('cyan','🏗️','DÉCOMPOSITION TECHNIQUE',`<div>${items}</div>`);
+  }
+
+  if (d.roadmap?.length) {
+    const rows = d.roadmap.map(r =>
+      `<div class="week-row"><span class="week-label">${r.semaine}</span><span class="week-content">${r.actions}</span></div>`
+    ).join('');
+    html += card('amber','🚀',"ROADMAP D'EXÉCUTION",`<div>${rows}</div>`);
+  }
+
+  if (d.prompts?.length) {
+    const blocks = d.prompts.map(p =>
+      `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#a78bfa;margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;">${p.titre}</div><div class="prompt-block">${p.contenu}</div></div>`
+    ).join('');
+    html += card('purple','💡','PROMPTS CRITIQUES',`<div>${blocks}</div>`);
+  }
+
+  if (d.metriques) {
+    const ti = (d.metriques.technique||[]).map(m=>`<li>${m}</li>`).join('');
+    const bi = (d.metriques.business||[]).map(m=>`<li>${m}</li>`).join('');
+    html += card('green','📊','MÉTRIQUES DE SUCCÈS',`
+      <div class="metric-grid">
+        <div class="metric-pill"><div class="m-label">Technique</div><ul style="list-style:none;padding:0;gap:3px;display:flex;flex-direction:column;">${ti}</ul></div>
+        <div class="metric-pill"><div class="m-label">Business</div><ul style="list-style:none;padding:0;gap:3px;display:flex;flex-direction:column;">${bi}</ul></div>
+      </div>`);
+  }
+
+  if (d.alertes?.length) {
+    const rows = d.alertes.map(a =>
+      `<div class="alert-row"><div class="alert-icon ${a.type}"></div><div class="alert-text">${a.texte}</div></div>`
+    ).join('');
+    html += card('red','⚠️','POINTS D\'ATTENTION',`<div>${rows}</div>`);
+  }
+
+  rb.innerHTML = html;
+  rb.classList.add('active');
+}
+
+function card(color, icon, title, body) {
+  return `<div class="section-card">
+    <div class="section-card-header">
+      <span class="section-icon">${icon}</span>
+      <span class="section-title ${color}">${title}</span>
+    </div>
+    <div class="section-card-body">${body}</div>
+  </div>`;
+}
+
+// ── INIT ──
+updateModelSelect();
+updateStatusLabel();
+loadKeys();
+</script>
+</body>
+</html>
